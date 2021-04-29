@@ -13,7 +13,10 @@
 
 #define UINPUT_BASE 0xff200000
 #define UINPUT_SIZE PAGE_SIZE
-#define UINPUT_INT_NUM 72
+//#define UINPUT_INT_NUM 72
+
+int UINPUT_INT_NUM = 72;
+module_param(UINPUT_INT_NUM, int, 0);
 
 void *eda_irq_mem;
 
@@ -104,9 +107,12 @@ static int __init eda_irq_init(void)
 
 	ret = request_irq(UINPUT_INT_NUM, eda_irq_interrupt,
 			0, "eda_irq", NULL);
-	if (ret < 0)
+	if (ret < 0) {
+        printk(KERN_DEBUG "eda-irq: could not request_irq: %d\n", ret);
 		goto fail_request_irq;
+	}
 
+    printk(KERN_DEBUG "eda-irq: enabled IRQ UINPUT=%d\n", UINPUT_INT_NUM);
 	return 0;
 
 fail_request_irq:
@@ -128,6 +134,7 @@ static void __exit eda_irq_exit(void)
 	release_mem_region(UINPUT_BASE, UINPUT_SIZE);
 	driver_remove_file(&eda_irq_driver, &driver_attr_eda_irq);
 	driver_unregister(&eda_irq_driver);
+    printk(KERN_DEBUG "eda-irq: disabled IRQ UINPUT=%d\n", UINPUT_INT_NUM);
 }
 
 MODULE_LICENSE("Dual BSD/GPL");
