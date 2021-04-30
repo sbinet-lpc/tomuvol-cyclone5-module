@@ -1,5 +1,4 @@
-## KERNEL_LOCATION=~/programs/others/linux-socfpga
-KERNEL_LOCATION=/build/linux-3.10-ltsi
+KERNEL_LOCATION=/build/linux
 ARMMAKE=make ARCH=arm SUBARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 
 obj-m := eda_irq.o
