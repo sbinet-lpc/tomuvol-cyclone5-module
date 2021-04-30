@@ -54,12 +54,12 @@ func build(dir string) error {
 		return fmt.Errorf("could not build docker x-compilation image: %w", err)
 	}
 
-	dir, err = filepath.Abs(dir)
+	log.Printf("building %q...", dir)
+
+	src, err := filepath.Abs(dir)
 	if err != nil {
 		return fmt.Errorf("could not build absolute path to sources: %w", err)
 	}
-
-	log.Printf("building %q...", dir)
 
 	tmp, err := os.MkdirTemp("", "tmv-cycl-")
 	if err != nil {
@@ -79,7 +79,7 @@ func build(dir string) error {
 
 	cmd := exec.Command(
 		"docker", "run", "--rm", "-t",
-		"-v", dir+":/build/src",
+		"-v", src+":/build/src",
 		"-v", tmp+":/build/x",
 		dockerImageName,
 		"/bin/sh", "/build/x/run.sh",
