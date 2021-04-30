@@ -17,49 +17,50 @@ Linux cyclone5 3.10.31-ltsi-05172-g28bac3e #1 SMP Tue Oct 18 16:02:00 EDT 2016 a
 ## Installation
 
 ```
-$> git clone git@github.com:sbinet-lpc/tomuvol-cyclone5-module
-$> cd ./tomuvol-cyclone5-module
-$> make
-git clone --branch socfpga-3.10-ltsi \
-	git@github.com:sbinet-lpc/tomuvol-linux-socfpga \
-	./linux-socfpga
+$> go get github.com/sbinet-lpc/tomuvol-cyclone5-module/cmd/tmv-cycl
+$> tmv-cycl ./hello
+tmv-cycl: building docker image "tomuvol-cyclone5-3.10"...
 Cloning into './linux-socfpga'...
 remote: warning: multi-pack bitmap is missing required reverse index
 remote: Enumerating objects: 6125779, done.
 remote: Counting objects: 100% (6125779/6125779), done.
 remote: Compressing objects: 100% (914709/914709), done.
-Receiving objects: 100% (6125779/6125779), 1.32 GiB | 16.54 MiB/s, done.
+Receiving objects: 100% (6125779/6125779), 1.32 GiB | 19.25 MiB/s, done.
 remote: Total 6125779 (delta 5171045), reused 6122122 (delta 5167388), pack-reused 0
 Resolving deltas: 100% (5171045/5171045), done.
 Updating files: 100% (43679/43679), done.
-mkdir -p ./modules
-DOCKER_BUILDKIT=1 \
- docker build -t cyclone5 -o out --progress=plain .
-#1 [internal] load build definition from Dockerfile
-#1 sha256:3379666a65f474986239e6bc8000979147025acca9e9e07937e151f353f23750
-#1 transferring dockerfile: 38B done
-#1 DONE 0.0s
-
+Sending build context to Docker daemon  2.131GB
+Step 1/10 : from ubuntu:12.04
+ ---> 5b117edd0b76
+Step 2/10 : run apt-get update -y
 [...]
-#24 [build-stage 20/20] RUN modinfo /build/out/*ko
-#24 sha256:252d4eda0b43b2b46390dcce0f3ffbfe25c7ef12b3de1ff1c3e0c97060a33f8c
-#24 0.635 filename:       /build/out/bjr.ko
-#24 0.635 license:        Dual BSD/GPL
-#24 0.635 depends:        
-#24 0.635 vermagic:       3.10.31-ltsi-05172-g28bac3e SMP mod_unload ARMv7 p2v8 
-#24 0.635 filename:       /build/out/eda_irq.ko
-#24 0.635 license:        Dual BSD/GPL
-#24 0.635 depends:        
-#24 0.635 vermagic:       3.10.31-ltsi-05172-g28bac3e SMP mod_unload ARMv7 p2v8 
-#24 DONE 0.7s
-
-#25 [export-stage 1/1] COPY --from=build-stage /build/out/*.ko /
-#25 sha256:3410d2eb1142ff88dc48c7e6257cb55cfcf4bf524c19fad910a8844773d42869
-#25 CACHED
-
-#26 exporting to client
-#26 sha256:b60a1292d407630dbb741f28ab6ea4ce3cca872ac28eeee56f4e66a182eca4bc
-#26 copying files 105.02kB done
-#26 DONE 0.0s
+  INSTALL drivers/usb/gadget/libcomposite.ko
+  DEPMOD  3.10.31-ltsi-05172-g28bac3e
+Removing intermediate container 0180f4c55ffb
+ ---> 67fc43264117
+Step 10/10 : workdir /build
+ ---> Running in 283a421f731f
+Removing intermediate container 283a421f731f
+ ---> 7097ec311889
+Successfully built 7097ec311889
+Successfully tagged tomuvol-cyclone5-3.10:latest
+tmv-cycl: building docker image "tomuvol-cyclone5-3.10"... [done]
++ /bin/cp -ra /build/src /build/module
++ cd /build/module
++ make
+make ARCH=arm SUBARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -C /build/linux M=/build/module modules
+make[1]: Entering directory `/build/linux'
+  CC [M]  /build/module/bjr.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+  CC      /build/module/bjr.mod.o
+  LD [M]  /build/module/bjr.ko
+make[1]: Leaving directory `/build/linux'
++ cd /build/src
++ /bin/cp /build/module/bjr.ko /build/src/.
++ modinfo ./bjr.ko
+filename:       ./bjr.ko
+license:        Dual BSD/GPL
+depends:        
+vermagic:       3.10.31-ltsi-05172-g28bac3e SMP mod_unload ARMv7 p2v8 
 ```
-
