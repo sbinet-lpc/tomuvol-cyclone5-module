@@ -14,9 +14,8 @@
 #define EDA_IRQ "eda-irq"
 #define UINPUT_BASE 0xff200000
 #define UINPUT_SIZE PAGE_SIZE
-//#define UINPUT_INT_NUM 72
 
-int UINPUT_INT_NUM = 72;
+int UINPUT_INT_NUM = 74;
 module_param(UINPUT_INT_NUM, int, 0);
 
 void *eda_irq_mem;
