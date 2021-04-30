@@ -41,14 +41,14 @@ func xmain() {
 	}
 
 	for _, dir := range flag.Args() {
-		err := buildModule(dir)
+		err := build(dir)
 		if err != nil {
-			log.Fatalf("could not build kernel module %q: %+v", dir, err)
+			log.Fatalf("could not build %q: %+v", dir, err)
 		}
 	}
 }
 
-func buildModule(dir string) error {
+func build(dir string) error {
 	err := buildDocker()
 	if err != nil {
 		return fmt.Errorf("could not build docker x-compilation image: %w", err)
@@ -56,16 +56,21 @@ func buildModule(dir string) error {
 
 	dir, err = filepath.Abs(dir)
 	if err != nil {
-		return fmt.Errorf("could not build absolute path to kernel module: %w", err)
+		return fmt.Errorf("could not build absolute path to sources: %w", err)
 	}
 
-	log.Printf("building kernel module from %q...", dir)
+	log.Printf("building %q...", dir)
 
 	tmp, err := os.MkdirTemp("", "tmv-cycl-")
 	if err != nil {
 		return fmt.Errorf("could not create tmp dir: %w", err)
 	}
 	defer os.RemoveAll(tmp)
+
+	buildScript := buildModuleScript
+	if !buildModule(dir) {
+		buildScript = buildBinScript
+	}
 
 	err = os.WriteFile(filepath.Join(tmp, "run.sh"), []byte(buildScript), 0644)
 	if err != nil {
@@ -83,10 +88,10 @@ func buildModule(dir string) error {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("could not run kernel module build script: %w", err)
+		return fmt.Errorf("could not build %q: %w", dir, err)
 	}
 
-	log.Printf("building kernel module from %q... [done]", dir)
+	log.Printf("building %q... [done]", dir)
 	return nil
 }
 
@@ -208,8 +213,7 @@ run make ARCH=arm INSTALL_MOD_PATH=/build/mnt modules_install
 
 workdir /build
 `
-
-const buildScript = `#!/bin/bash
+const buildModuleScript = `#!/bin/bash
 
 set -e
 set -x
@@ -223,3 +227,22 @@ cd /build/src
 /bin/cp /build/module/*ko /build/src/.
 modinfo ./*ko
 `
+
+const buildBinScript = `#!/bin/bash
+
+set -e
+set -x
+
+cd /build/src
+make
+`
+
+func buildModule(dir string) bool {
+	raw, err := os.ReadFile(filepath.Join(dir, "Makefile"))
+	if err != nil {
+		log.Printf("could not read Makefile from %q: %+v", dir, err)
+		return false
+	}
+
+	return bytes.Contains(raw, []byte("KERNEL_LOCATION="))
+}
