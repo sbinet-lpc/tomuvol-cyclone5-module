@@ -1,9 +1,9 @@
 KERNEL_LOCATION=/build/linux
 ARMMAKE=make ARCH=arm SUBARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 
-obj-m := eda_irq.o
+obj-m := eda-irq.o
 
-eda_irq.ko: eda_irq.c
+eda-irq.ko: eda-irq.c
 	$(ARMMAKE) -C $(KERNEL_LOCATION) M=$(PWD) modules
 
 clean:

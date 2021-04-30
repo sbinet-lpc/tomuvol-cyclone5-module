@@ -11,6 +11,7 @@
 #include <linux/interrupt.h>
 #include <linux/spinlock_types.h>
 
+#define EDA_IRQ "eda-irq"
 #define UINPUT_BASE 0xff200000
 #define UINPUT_SIZE PAGE_SIZE
 //#define UINPUT_INT_NUM 72
@@ -43,7 +44,7 @@ static irqreturn_t eda_irq_interrupt(int irq, void *dev_id)
 }
 
 static struct device_driver eda_irq_driver = {
-	.name = "eda_irq",
+	.name = EDA_IRQ,
 	.bus = &platform_bus_type,
 };
 
@@ -93,7 +94,7 @@ static int __init eda_irq_init(void)
 	if (ret < 0)
 		goto fail_create_file;
 
-	res = request_mem_region(UINPUT_BASE, UINPUT_SIZE, "eda_irq");
+	res = request_mem_region(UINPUT_BASE, UINPUT_SIZE, EDA_IRQ);
 	if (res == NULL) {
 		ret = -EBUSY;
 		goto fail_request_mem;
@@ -106,7 +107,7 @@ static int __init eda_irq_init(void)
 	}
 
 	ret = request_irq(UINPUT_INT_NUM, eda_irq_interrupt,
-			0, "eda_irq", NULL);
+			0, EDA_IRQ, NULL);
 	if (ret < 0) {
         printk(KERN_DEBUG "eda-irq: could not request_irq: %d\n", ret);
 		goto fail_request_irq;
