@@ -15,7 +15,7 @@
 #define UINPUT_BASE 0xff200000
 #define UINPUT_SIZE PAGE_SIZE
 
-int UINPUT_INT_NUM = 74;
+int UINPUT_INT_NUM = 72;
 module_param(UINPUT_INT_NUM, int, 0);
 
 void *eda_irq_mem;
@@ -26,6 +26,8 @@ static DECLARE_WAIT_QUEUE_HEAD(interrupt_wq);
 static int interrupt_flag = 0;
 static DEFINE_SPINLOCK(interrupt_flag_lock);
 static uint8_t input_state;
+
+static int eda_irq_flags = IRQF_SHARED;
 
 static irqreturn_t eda_irq_interrupt(int irq, void *dev_id)
 {
@@ -84,12 +86,14 @@ static int __init eda_irq_init(void)
 	int ret;
 	struct resource *res;
 
-	ret = driver_register(&eda_irq_driver);
-	if (ret < 0)
-		goto fail_driver_register;
+    printk(KERN_DEBUG "eda-irq: enabling IRQ UINPUT=%d...\n", UINPUT_INT_NUM);
 
-	ret = driver_create_file(&eda_irq_driver,
-			&driver_attr_eda_irq);
+	ret = driver_register(&eda_irq_driver);
+	if (ret < 0) {
+		goto fail_driver_register;
+	}
+
+	ret = driver_create_file(&eda_irq_driver, &driver_attr_eda_irq);
 	if (ret < 0)
 		goto fail_create_file;
 
@@ -105,14 +109,20 @@ static int __init eda_irq_init(void)
 		goto fail_ioremap;
 	}
 
+//	ret = can_request_irq(UINPUT_INT_NUM, eda_irq_flags);
+//	if (ret < 0) {
+//        printk(KERN_DEBUG "eda-irq: could not can_request_irq: %d\n", ret);
+//		goto fail_request_irq;
+//	}
+
 	ret = request_irq(UINPUT_INT_NUM, eda_irq_interrupt,
-			0, EDA_IRQ, NULL);
+			eda_irq_flags, EDA_IRQ, (void*)eda_irq_interrupt);
 	if (ret < 0) {
         printk(KERN_DEBUG "eda-irq: could not request_irq: %d\n", ret);
 		goto fail_request_irq;
 	}
 
-    printk(KERN_DEBUG "eda-irq: enabled IRQ UINPUT=%d\n", UINPUT_INT_NUM);
+    printk(KERN_DEBUG "eda-irq: enabling IRQ UINPUT=%d... [ok]\n", UINPUT_INT_NUM);
 	return 0;
 
 fail_request_irq:
@@ -129,7 +139,7 @@ fail_driver_register:
 
 static void __exit eda_irq_exit(void)
 {
-	free_irq(UINPUT_INT_NUM, NULL);
+	free_irq(UINPUT_INT_NUM, (void*)eda_irq_interrupt);
 	iounmap(eda_irq_mem);
 	release_mem_region(UINPUT_BASE, UINPUT_SIZE);
 	driver_remove_file(&eda_irq_driver, &driver_attr_eda_irq);

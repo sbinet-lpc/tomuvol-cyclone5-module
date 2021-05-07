@@ -26,6 +26,7 @@ func xmain() {
 	log.SetFlags(0)
 
 	dir := flag.String("dir", ".", "path to directory to mount")
+	tty := flag.Bool("i", false, "request a TTY")
 
 	flag.Parse()
 
@@ -34,13 +35,13 @@ func xmain() {
 		log.Fatalf("missing command to execute")
 	}
 
-	err := build(*dir, flag.Args())
+	err := build(*dir, *tty, flag.Args())
 	if err != nil {
 		log.Fatalf("could not run command %q: %+v", flag.Args(), err)
 	}
 }
 
-func build(dir string, args []string) error {
+func build(dir string, interactive bool, args []string) error {
 	err := xbuild.Docker()
 	if err != nil {
 		return fmt.Errorf("could not build docker image: %w", err)
@@ -73,13 +74,19 @@ cd /build/src
 		return fmt.Errorf("could not create build script: %w", err)
 	}
 
+	tty := "-t"
+	if interactive {
+		tty = "-it"
+	}
+
 	cmd := exec.Command(
-		"docker", "run", "--rm", "-t",
+		"docker", "run", "--rm", tty,
 		"-v", src+":/build/src",
 		"-v", tmp+":/build/x",
 		xbuild.ImageName,
 		"/bin/sh", "/build/x/run.sh",
 	)
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()

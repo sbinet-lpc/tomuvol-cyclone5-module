@@ -9,11 +9,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	hwlib "github.com/sbinet-lpc/tomuvol-cyclone5-module/internal/altera-hps"
 )
 
 const ImageName = "tomuvol-cyclone5-3.10"
@@ -34,6 +37,11 @@ func Docker() error {
 		return fmt.Errorf("could not create tmp dir: %w", err)
 	}
 	defer os.RemoveAll(dir)
+
+	err = mountHwLib(dir)
+	if err != nil {
+		return fmt.Errorf("could not mount altera-hps directory: %w", err)
+	}
 
 	cmd := exec.Command(
 		"git", "clone", "--branch", "socfpga-3.10-ltsi",
@@ -124,6 +132,9 @@ run apt-get install -y \
 	;
 
 add ./linux-socfpga /build/linux
+add ./hwlib         /build/soc_eds/ip/altera/hps/altera_hps/hwlib
+
+env SOCEDS_DEST_ROOT /build/soc_eds
 
 workdir /build/linux
 
@@ -134,3 +145,34 @@ run make ARCH=arm INSTALL_MOD_PATH=/build/mnt modules_install
 
 workdir /build
 `
+
+func mountHwLib(name string) error {
+	dst := name
+	src := hwlib.FS
+
+	err := fs.WalkDir(src, "hwlib", func(path string, d fs.DirEntry, err error) error {
+		name := filepath.Join(dst, path)
+		log.Printf(">> %v -- %v",
+			path,
+			name,
+		)
+		switch {
+		case d.Type().IsDir():
+			return os.Mkdir(name, 0755)
+		case d.Type().IsRegular():
+			raw, err := src.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			return os.WriteFile(name, raw, 0644)
+		default:
+			return fmt.Errorf("unknown dir-entry type %v", d.Type())
+		}
+	})
+
+	if err != nil {
+		log.Fatalf("could not mount %q: %+v", name, err)
+	}
+
+	return nil
+}
